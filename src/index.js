@@ -4,7 +4,6 @@ import { Router } from '@vaadin/router';
 
 window.addEventListener('load', () => {
   initRouter();
-  registerSW();
 });
 
 function initRouter() {

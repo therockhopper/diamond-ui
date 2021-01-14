@@ -41,7 +41,6 @@ export class DiamondButton extends LitElement {
         width: 64rem;
       }
 
-
       .diamondButton:disabled {
         background-color: #8d8d8d;
       }
