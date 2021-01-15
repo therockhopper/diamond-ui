@@ -3,25 +3,37 @@ import {LitElement, html, css} from 'lit-element';
 export class DiamondAvatar extends LitElement {
   static get properties() {
     return {
-      uid: {type: String},
-      bluePages: {type: Boolean},
+      user: {type: Object},
+      avatarBaseURL: {type: String},
     };
   }
 
   static get styles() {
-    return css``;
+    return css`
+      .diamondAvatar {
+        height: 2rem;
+        width: 2rem;
+        border-radius: 50%;
+      }
+    `;
   }
 
   constructor() {
     super();
     this.uid = undefined;
-    this.bluePages = false
+    this.avatarBaseURL =
+      'https://w3-services1.w3-969.ibm.com/myw3/unified-profile-photo/v1/image/';
+  }
+
+  get imagePath() {
+    if (!this.user) return '';
+    return this.avatarBaseURL + this.user.uid;
   }
 
   render() {
     return html`
-    ${this.uid}
-      `;
+      <img class="diamondAvatar" .src="${this.imagePath}" />
+    `;
   }
 }
 

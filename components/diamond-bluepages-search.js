@@ -174,17 +174,17 @@ export class DiamondBluePagesSearch extends LitElement {
         ${this.isOpen && !this.disabled
           ? html`
               <ul class="diamondBluePagesList">
-                ${this.results.map(result => {
+                ${this.results.map(user => {
                   return html`
                     <li
                       class="diamondBluePagesListItem"
-                      @click="${e => this.emitSelection(result)}"
+                      @click="${e => this.emitSelection(user)}"
                     >
                       <diamond-avatar
                         bluepages
-                        .uid="${result.uid}"
+                        .user="${user}"
                       ></diamond-avatar>
-                      ${result.nameFull} ${result.nameFull}
+                      ${user.nameFull} ${user.nameFull}
                     </li>
                   `;
                 })}

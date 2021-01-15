@@ -25,10 +25,10 @@ class DemoView extends BaseView {
         ? html`
             <diamond-avatar
               bluepages
-              .uid="${this.selection.uid}"
+              .user="${this.selection}"
             ></diamond-avatar>
           `
-        : ''}
+        : 'No user selected'}
       <diamond-bluepages-search
         @selection="${e => (this.selection = e.detail.value)}"
       ></diamond-bluepages-search>
