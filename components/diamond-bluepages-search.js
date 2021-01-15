@@ -2,9 +2,6 @@ import {LitElement, html, css} from 'lit-element';
 import './diamond-avatar';
 import debounce from './debounce';
 
-const site =
-  'https://w3-services1.w3-969.ibm.com/myw3/unified-profile/v1/search/user?searchConfig=optimized_search';
-
 export class DiamondBluePagesSearch extends LitElement {
   static get properties() {
     return {
@@ -17,6 +14,7 @@ export class DiamondBluePagesSearch extends LitElement {
       isLoading: {type: Boolean},
       arrowCounter: {type: Number},
       disabled: {type: Boolean},
+      bluePagesURL: {type: String},
     };
   }
 
@@ -65,6 +63,8 @@ export class DiamondBluePagesSearch extends LitElement {
     this.isLoading = false;
     this.isOpen = false;
     this.results = [];
+    this.bluePagesURL =
+      'https://w3-services1.w3-969.ibm.com/myw3/unified-profile/v1/search/user?searchConfig=optimized_search';
   }
 
   get _dropDown() {
@@ -79,11 +79,26 @@ export class DiamondBluePagesSearch extends LitElement {
 
   handleClick(evt) {
     const evtOrigin = evt.composedPath()[0];
-    const rootElm = this._dropDown
+    const rootElm = this._dropDown;
     if (rootElm && !rootElm.contains(evtOrigin)) {
-      // Close the dropdown
-      this.reset()
+      this.isOpen = false;
+      this.arrowCounter = -1;
     }
+  }
+
+  emitSelection(result) {
+    const payload = result || this.results[this.arrowCounter];
+    let myEvent = new CustomEvent('selection', {
+      detail: payload,
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(myEvent);
+    this.reset();
+  }
+
+  onEnter() {
+    this.emitSelection();
   }
 
   disconnectedCallback() {
@@ -96,14 +111,13 @@ export class DiamondBluePagesSearch extends LitElement {
     const searchString = query || '';
     const searchQuery = `&rows=${searchRows}&query=${searchString}`;
 
-    const resp = await fetch(`${site}${searchQuery}`);
-
-    if (resp && resp.ok) {
-      const {results} = await resp.json();
-      return results;
-    } else {
-      return [];
+    const resp = await fetch(`${this.bluePagesURL}${searchQuery}`);
+    if (!resp.ok) {
+      throw resp.statusText
     }
+
+    const {results} = await resp.json();
+    return results;
   }
 
   reset() {
@@ -113,27 +127,24 @@ export class DiamondBluePagesSearch extends LitElement {
     this.results = [];
   }
 
-  onArrowUp() {
-    if (this.arrowCounter > 0) {
+  handleArrowKeys(keyCode) {
+    if (keyCode === 40 && this.arrowCounter < this.results.length - 1) {
+      // up
+      this.arrowCounter = this.arrowCounter + 1;
+    } else if (keyCode === 38 && this.arrowCounter > 0) {
+      // down
       this.arrowCounter = this.arrowCounter - 1;
     }
   }
 
   onKeyDown(e) {
-    this.seachBluePages(this.query); // only do most recent query
-    return;
-    /*
-    if (!this.query) {
-      return; // ignore empty search
+    const {keyCode} = e;
+    if (keyCode === 38 || keyCode === 40) {
+      this.handleArrowKeys(keyCode);
+      return; // skip arrow keys
     }
-    console.log(this.query)
-    const quque = debounce(query => {
-      if (query === this.query) {
-        this.seachBluePages(this.query); // only do most recent query
-      }
-    }, 250);
-    quque(this.query);
-    */
+
+    this.seachBluePages(this.query); // only do most recent query
   }
 
   seachBluePages(query) {
@@ -143,6 +154,8 @@ export class DiamondBluePagesSearch extends LitElement {
     this.searchByName(query, 8).then(resp => {
       this.results = resp;
       this.isLoading = false;
+    }).catch(e => {
+      this.error = true
     });
   }
 
@@ -161,7 +174,10 @@ export class DiamondBluePagesSearch extends LitElement {
               <ul class="diamondBluePagesList">
                 ${this.results.map(result => {
                   return html`
-                    <li class="diamondBluePagesListItem">
+                    <li
+                      class="diamondBluePagesListItem"
+                      @click="${e => this.emitSelection(result)}"
+                    >
                       <diamond-avatar
                         bluepages
                         .uid="${result.uid}"
