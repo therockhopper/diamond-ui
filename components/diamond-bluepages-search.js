@@ -89,7 +89,7 @@ export class DiamondBluePagesSearch extends LitElement {
   emitSelection(result) {
     const payload = result || this.results[this.arrowCounter];
     let myEvent = new CustomEvent('selection', {
-      detail: payload,
+      detail: {value: payload},
       bubbles: true,
       composed: true,
     });
@@ -113,7 +113,7 @@ export class DiamondBluePagesSearch extends LitElement {
 
     const resp = await fetch(`${this.bluePagesURL}${searchQuery}`);
     if (!resp.ok) {
-      throw resp.statusText
+      throw resp.statusText;
     }
 
     const {results} = await resp.json();
@@ -151,12 +151,14 @@ export class DiamondBluePagesSearch extends LitElement {
     // only seach the most recent query
     this.isLoading = true;
     this.isOpen = true;
-    this.searchByName(query, 8).then(resp => {
-      this.results = resp;
-      this.isLoading = false;
-    }).catch(e => {
-      this.error = true
-    });
+    this.searchByName(query, 8)
+      .then(resp => {
+        this.results = resp;
+        this.isLoading = false;
+      })
+      .catch(e => {
+        this.error = true;
+      });
   }
 
   render() {
@@ -167,7 +169,7 @@ export class DiamondBluePagesSearch extends LitElement {
           type="text"
           @keyup="${this.onKeyDown}"
           @input="${e => (this.query = e.target.value)}"
-          value="${this.query}"
+          .value="${this.query}"
         />
         ${this.isOpen && !this.disabled
           ? html`
@@ -188,7 +190,7 @@ export class DiamondBluePagesSearch extends LitElement {
                 })}
               </ul>
             `
-            : `No results`}
+          : `No results`}
       </div>
     `;
   }

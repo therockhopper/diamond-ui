@@ -1,16 +1,37 @@
-import { html} from 'lit-element';
-import { BaseView } from './base-view.js';
+import {html} from 'lit-element';
+import {BaseView} from './base-view.js';
 
 // Import components for Demo
-import '../../components/diamond-button'
-import '../../components/diamond-input'
-import '../../components/diamond-bluepages-search'
+import '../../components/diamond-avatar';
+import '../../components/diamond-button';
+import '../../components/diamond-input';
+import '../../components/diamond-bluepages-search';
 
 class DemoView extends BaseView {
+  static get properties() {
+    return {
+      selection: {type: Object},
+    };
+  }
+
+  constructor() {
+    super();
+    this.selection = null;
+  }
 
   render() {
     return html`
-      <diamond-bluepages-search></diamond-bluepages-search>
+      ${this.selection
+        ? html`
+            <diamond-avatar
+              bluepages
+              .uid="${this.selection.uid}"
+            ></diamond-avatar>
+          `
+        : ''}
+      <diamond-bluepages-search
+        @selection="${e => (this.selection = e.detail.value)}"
+      ></diamond-bluepages-search>
     `;
   }
 }
