@@ -1,20 +1,6 @@
 import {LitElement, html, css} from 'lit-element';
-
-function debounce(func, wait, immediate) {
-  var timeout;
-  return function() {
-    var context = this,
-      args = arguments;
-    var later = function() {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    };
-    var callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, args);
-  };
-}
+import './diamond-avatar';
+import debounce from './debounce';
 
 const site =
   'https://w3-services1.w3-969.ibm.com/myw3/unified-profile/v1/search/user?searchConfig=optimized_search';
@@ -36,11 +22,37 @@ export class DiamondBluePagesSearch extends LitElement {
 
   static get styles() {
     return css`
+      .diamondBluePagesSearch {
+        display: flex;
+        position: relative;
+        flex-direction: column;
+      }
+
       .diamondInput {
         display: flex;
-        width: 12rem;
+        flex-direction: column;
+        width: 15rem;
         height: 1.2rem;
         border: 2px solid black;
+      }
+
+      .diamondBluePagesList {
+        position: absolute;
+        top: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid black;
+        width: 15rem;
+      }
+
+      .diamondBluePagesListItem {
+        color: #000;
+        padding: 0.75rem 0.5rem;
+        cursor: pointer;
+        border: 1px solid red;
+      }
+      .diamondBluePagesListItem:hover {
+        background: #f0f0f0;
       }
     `;
   }
@@ -48,15 +60,40 @@ export class DiamondBluePagesSearch extends LitElement {
   constructor() {
     super();
     this.disabled = false;
-    this.query = undefined;
+    this.query = '';
     this.arrowCounter = 0;
     this.isLoading = false;
     this.isOpen = false;
+    this.results = [];
+  }
+
+  get _dropDown() {
+    return this.shadowRoot.querySelector('#diamondBluePagesSearch');
+  }
+
+  async firstUpdated() {
+    // Give the browser a chance to paint
+    await new Promise(r => setTimeout(r, 0));
+    document.addEventListener('click', this.handleClick.bind(this));
+  }
+
+  handleClick(evt) {
+    const evtOrigin = evt.composedPath()[0];
+    const rootElm = this._dropDown
+    if (rootElm && !rootElm.contains(evtOrigin)) {
+      // Close the dropdown
+      this.reset()
+    }
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener('click', this.handleClick.bind(this));
+    super.disconnectedCallback();
   }
 
   async searchByName(query, rows) {
     const searchRows = rows || 10;
-    const searchString = search || '';
+    const searchString = query || '';
     const searchQuery = `&rows=${searchRows}&query=${searchString}`;
 
     const resp = await fetch(`${site}${searchQuery}`);
@@ -65,14 +102,15 @@ export class DiamondBluePagesSearch extends LitElement {
       const {results} = await resp.json();
       return results;
     } else {
-      return null;
+      return [];
     }
   }
 
   reset() {
-    this.search = undefined;
+    this.query = undefined;
     this.arrowCounter = -1;
     this.isOpen = false;
+    this.results = [];
   }
 
   onArrowUp() {
@@ -81,74 +119,60 @@ export class DiamondBluePagesSearch extends LitElement {
     }
   }
 
-  onEnter() {
-    const event = new CustomEvent('on-select', {
-      user: this.results[this.arrowCounter],
-    });
-    this.dispatchEvent(event);
-    this.reset();
-  }
-
   onKeyDown(e) {
-    // ignore empty search
-    this.isLoading = false;
-    this.isOpen = false;
-
-    const search = debounce((query) => {
-      // All the taxing stuff you do
-      if (this.query === query) {
-        console.log(query)
-        // only seach the most recent query
-        this.isLoading = true;
-        this.isOpen = true
-        this.searchByName(query, 8).then(resp => {
-          console.log(resp)
-          this.results = resp;
-          this.isLoading = false;
-        })
+    this.seachBluePages(this.query); // only do most recent query
+    return;
+    /*
+    if (!this.query) {
+      return; // ignore empty search
+    }
+    console.log(this.query)
+    const quque = debounce(query => {
+      if (query === this.query) {
+        this.seachBluePages(this.query); // only do most recent query
       }
     }, 250);
-    search(this.query);
+    quque(this.query);
+    */
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    //window.addEventListener('resize', );
-  }
-  disconnectedCallback() {
-    //window.removeEventListener('resize',);
-    super.disconnectedCallback();
+  seachBluePages(query) {
+    // only seach the most recent query
+    this.isLoading = true;
+    this.isOpen = true;
+    this.searchByName(query, 8).then(resp => {
+      this.results = resp;
+      this.isLoading = false;
+    });
   }
 
   render() {
     return html`
-      <div>
-        <h1>Blue Pages ${this.query}</h1>
+      <div class="diamondBluePagesSearch" id="diamondBluePagesSearch">
         <input
           class="diamondInput"
           type="text"
-          @keydown="${this.onKeyDown}"
-          @input="${ e => this.query = e.target.value}"
+          @keyup="${this.onKeyDown}"
+          @input="${e => (this.query = e.target.value)}"
           value="${this.query}"
         />
         ${this.isOpen && !this.disabled
           ? html`
-              <ul
-                id="autocomplete-results"
-                class="absolute left-0 pt-4 w-full overflow-auto z-10"
-              >
-                ${this.results.map((result, i) => {
-                  html`
-                    <li
-                      class="flex items-center px-2 py-3 w-full cursor-pointer"
-                    >
-                      ${result.nameFull}
+              <ul class="diamondBluePagesList">
+                ${this.results.map(result => {
+                  return html`
+                    <li class="diamondBluePagesListItem">
+                      <diamond-avatar
+                        bluepages
+                        .uid="${result.uid}"
+                      ></diamond-avatar>
+                      ${result.nameFull} ${result.nameFull}
                     </li>
                   `;
-                })}}
+                })}
               </ul>
             `
-            : ``}
+            : `No results`}
       </div>
     `;
   }

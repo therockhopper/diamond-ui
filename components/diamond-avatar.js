@@ -3,6 +3,8 @@ import {LitElement, html, css} from 'lit-element';
 export class DiamondAvatar extends LitElement {
   static get properties() {
     return {
+      uid: {type: String},
+      bluePages: {type: Boolean},
     };
   }
 
@@ -12,10 +14,13 @@ export class DiamondAvatar extends LitElement {
 
   constructor() {
     super();
+    this.uid = undefined;
+    this.bluePages = false
   }
 
   render() {
     return html`
+    ${this.uid}
       `;
   }
 }
